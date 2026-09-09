@@ -1,0 +1,209 @@
+/* ==========================================================================
+   AuraMusic Desktop Signature Cosmic Glass & Windows 11 Fluent Theme
+   ========================================================================== */
+
+:root {
+  --aura-cyan: #00f0ff;
+  --aura-violet: #a855f7;
+  --aura-purple: #7928ca;
+  --aura-gradient: linear-gradient(135deg, #00f0ff 0%, #a855f7 50%, #ec4899 100%);
+  --aura-bg: #08090f;
+  --aura-surface: rgba(18, 20, 32, 0.75);
+  --aura-glass: rgba(12, 14, 24, 0.72);
+  --aura-border: rgba(255, 255, 255, 0.08);
+  --aura-border-focus: rgba(0, 240, 255, 0.45);
+  --aura-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.55);
+  --aura-glow: 0 0 24px rgba(0, 240, 255, 0.28);
+}
+
+/* Base Body & Background */
+html, body, ytmusic-app {
+  background-color: var(--aura-bg) !important;
+  color: #f1f5f9 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  letter-spacing: -0.01em;
+}
+
+/* Glass Header / Top Navigation Bar */
+ytmusic-nav-bar {
+  background: var(--aura-glass) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border-bottom: 1px solid var(--aura-border) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+/* Brand Logo Overhaul: AuraMusic Glow Identity */
+ytmusic-nav-bar .logo {
+  position: relative;
+}
+
+ytmusic-nav-bar .logo::after {
+  content: 'AuraMusic';
+  display: inline-block;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: -0.03em;
+  background: var(--aura-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-left: 6px;
+  vertical-align: middle;
+  text-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+}
+
+/* Search Box Glass Styling */
+ytmusic-search-box {
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--aura-border) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+ytmusic-search-box:focus-within {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: var(--aura-border-focus) !important;
+  box-shadow: 0 0 16px rgba(0, 240, 255, 0.25) !important;
+}
+
+/* Sidebar / Guide Styling */
+ytmusic-guide-renderer {
+  background: var(--aura-glass) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-right: 1px solid var(--aura-border) !important;
+}
+
+ytmusic-guide-entry-renderer[is-primary] tp-yt-paper-item,
+ytmusic-guide-entry-renderer tp-yt-paper-item {
+  border-radius: 10px !important;
+  margin: 2px 10px !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+ytmusic-guide-entry-renderer[is-primary] tp-yt-paper-item:hover,
+ytmusic-guide-entry-renderer tp-yt-paper-item:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  transform: translateX(4px);
+}
+
+ytmusic-guide-entry-renderer[is-primary][active] tp-yt-paper-item {
+  background: linear-gradient(90deg, rgba(0, 240, 255, 0.18) 0%, rgba(168, 85, 247, 0.12) 100%) !important;
+  border-left: 3px solid var(--aura-cyan) !important;
+}
+
+/* Bottom Player Bar - Windows 11 Fluent Acrylic */
+ytmusic-player-bar {
+  background: var(--aura-glass) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  border-top: 1px solid var(--aura-border) !important;
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45) !important;
+  padding: 0 12px !important;
+}
+
+/* Player Bar Progress Slider - Neon Gradient */
+#progress-bar.ytmusic-player-bar {
+  --paper-slider-active-color: transparent !important;
+  --paper-slider-knob-color: var(--aura-cyan) !important;
+}
+
+#progress-bar.ytmusic-player-bar #primaryProgress {
+  background: var(--aura-gradient) !important;
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.5) !important;
+  border-radius: 4px !important;
+}
+
+#progress-bar.ytmusic-player-bar #sliderKnob .slider-knob-inner {
+  box-shadow: 0 0 14px var(--aura-cyan) !important;
+  background-color: #ffffff !important;
+  border: 2px solid var(--aura-cyan) !important;
+  transform: scale(1.1);
+  transition: transform 0.15s ease;
+}
+
+#progress-bar.ytmusic-player-bar:hover #sliderKnob .slider-knob-inner {
+  transform: scale(1.35);
+}
+
+/* Play/Pause Button Pulse Effect */
+#play-pause-button {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease !important;
+}
+
+#play-pause-button:hover {
+  transform: scale(1.12);
+  filter: drop-shadow(0 0 12px rgba(0, 240, 255, 0.4));
+}
+
+#play-pause-button:active {
+  transform: scale(0.95);
+}
+
+/* Song Item Cards & Rows */
+ytmusic-responsive-list-item-renderer {
+  border-radius: 12px !important;
+  margin: 3px 0 !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+ytmusic-responsive-list-item-renderer:hover {
+  background: rgba(255, 255, 255, 0.06) !important;
+  transform: translateY(-1px);
+}
+
+ytmusic-responsive-list-item-renderer[play-button-state="playing"] {
+  background: rgba(0, 240, 255, 0.08) !important;
+  border-left: 3px solid var(--aura-cyan) !important;
+}
+
+/* Album Art Soft Glow */
+ytmusic-player[player-ui-state="FULLSCREEN"] #player-page,
+#thumbnail yt-img-shadow img {
+  border-radius: 10px !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Smooth Rounded Buttons & Chips */
+ytmusic-chip-cloud-chip-renderer {
+  border-radius: 9999px !important;
+  border: 1px solid var(--aura-border) !important;
+  transition: all 0.2s ease !important;
+}
+
+ytmusic-chip-cloud-chip-renderer[is-selected] {
+  background: var(--aura-gradient) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.35) !important;
+}
+
+/* Custom Sleek Glass Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 9999px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 240, 255, 0.5);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.4);
+}
+
+/* Hide annoying upgrade / sponsor banners */
+ytmusic-mealbar-promo-renderer,
+#upgrade-button,
+a[href*="music.youtube.com/premium"],
+ytmusic-pivot-bar-item-renderer[tab-id="SPunlimited"] {
+  display: none !important;
+}
