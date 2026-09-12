@@ -7,10 +7,12 @@ export const registerOverlay = (
   app: Hono,
   _ctx: BackendContext<APIServerConfig>,
   getSongInfo: () => SongInfo | undefined,
+  getLyricInfo?: () => { text: string; translation?: string } | undefined,
 ) => {
   // 1. JSON Data API for overlays
   app.get('/overlay/data', (c) => {
     const info = getSongInfo();
+    const lyric = getLyricInfo?.();
     return c.json({
       title: info?.title || '',
       artist: info?.artist || '',
@@ -21,6 +23,8 @@ export const registerOverlay = (
       isPaused: info?.isPaused ?? true,
       videoId: info?.videoId || '',
       url: info?.url || '',
+      currentLyric: lyric?.text || '',
+      currentLyricTranslation: lyric?.translation || '',
     });
   });
 
@@ -254,17 +258,31 @@ export const registerOverlay = (
   </div>
 
   <script>
+    let lastText = '';
+    let lastTrans = '';
     async function updateLyrics() {
       try {
         const res = await fetch('/overlay/data');
         if (!res.ok) return;
         const data = await res.json();
-        if (data.title) {
-          document.getElementById('lyric-text').textContent = data.title + ' - ' + data.artist;
+        const textEl = document.getElementById('lyric-text');
+        const transEl = document.getElementById('lyric-translation');
+
+        const lyric = data.currentLyric || (data.title ? data.title + ' - ' + data.artist : '♪ AuraMusic Live Lyrics ♪');
+        const trans = data.currentLyricTranslation || '';
+
+        if (lyric !== lastText) {
+          lastText = lyric;
+          textEl.textContent = lyric;
+        }
+        if (trans !== lastTrans) {
+          lastTrans = trans;
+          transEl.textContent = trans;
+          transEl.style.display = trans ? 'block' : 'none';
         }
       } catch (e) {}
     }
-    setInterval(updateLyrics, 1000);
+    setInterval(updateLyrics, 300);
     updateLyrics();
   </script>
 </body>

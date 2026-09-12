@@ -18,6 +18,8 @@ let bandpassFilter: BiquadFilterNode | null = null;
 let karaokeInverter: GainNode | null = null;
 let bypassGain: GainNode | null = null;
 let processedGain: GainNode | null = null;
+let stereoPassGain: GainNode | null = null;
+let rawAudioSource: AudioNode | null = null;
 
 let currentMode: VocalMode = 'off';
 let buttonEl: HTMLButtonElement | null = null;
@@ -30,15 +32,17 @@ function applyMode(mode: VocalMode) {
     bypassGain.gain.value = 1.0;
     processedGain.gain.value = 0.0;
   } else if (mode === 'karaoke') {
-    // Vocal cut: bypass is off, inverted center vocal mixed with original stereo channels
+    // Vocal cut: bypass off, inverted center vocal subtracted from original stereo
     bypassGain.gain.value = 0.0;
     processedGain.gain.value = 1.0;
+    if (stereoPassGain) stereoPassGain.gain.value = 1.0;
     karaokeInverter.gain.value = -1.0;
     centerSum.gain.value = 0.5;
   } else if (mode === 'acapella') {
-    // Vocal solo: isolate centered vocal formant band
+    // Vocal solo: isolate centered vocal formant band, mute original stereo pass
     bypassGain.gain.value = 0.0;
     processedGain.gain.value = 1.0;
+    if (stereoPassGain) stereoPassGain.gain.value = 0.0;
     karaokeInverter.gain.value = 1.0;
     centerSum.gain.value = 1.0;
   }
@@ -73,9 +77,16 @@ function updateButtonUI() {
 }
 
 function setupAudioDSP(audioSource: AudioNode, audioContext: AudioContext) {
+  rawAudioSource = audioSource;
   destinationNode = audioContext.destination;
 
-  // 1. Bypass path
+  // Disconnect direct audio source connection from renderer.ts line 285
+  // to eliminate raw audio bleeding through into the speakers
+  try {
+    audioSource.disconnect(destinationNode);
+  } catch {}
+
+  // 1. Bypass path (active when mode === 'off')
   bypassGain = audioContext.createGain();
   bypassGain.gain.value = currentMode === 'off' ? 1.0 : 0.0;
   audioSource.connect(bypassGain);
@@ -101,6 +112,10 @@ function setupAudioDSP(audioSource: AudioNode, audioContext: AudioContext) {
   karaokeInverter = audioContext.createGain();
   karaokeInverter.gain.value = -1.0;
 
+  // Stereo pass-through gain (muted in Acapella mode so original mix doesn't play)
+  stereoPassGain = audioContext.createGain();
+  stereoPassGain.gain.value = currentMode === 'acapella' ? 0.0 : 1.0;
+
   audioSource.connect(splitter);
 
   // Splitter L and R into centerSum
@@ -111,13 +126,15 @@ function setupAudioDSP(audioSource: AudioNode, audioContext: AudioContext) {
   centerSum.connect(bandpassFilter);
   bandpassFilter.connect(karaokeInverter);
 
-  // Invert into L and R channels
+  // Route inverted center vocal into L and R channels
   karaokeInverter.connect(merger, 0, 0);
   karaokeInverter.connect(merger, 0, 1);
 
-  // Also feed original L and R into merger
-  splitter.connect(merger, 0, 0);
-  splitter.connect(merger, 1, 1);
+  // Route stereo pass-through through stereoPassGain into merger
+  splitter.connect(stereoPassGain, 0);
+  splitter.connect(stereoPassGain, 1);
+  stereoPassGain.connect(merger, 0, 0);
+  stereoPassGain.connect(merger, 0, 1);
 
   merger.connect(processedGain);
   processedGain.connect(destinationNode);
@@ -187,6 +204,11 @@ export default createPlugin<
         buttonEl = null;
       }
       applyMode('off');
+      if (rawAudioSource && destinationNode) {
+        try {
+          rawAudioSource.connect(destinationNode);
+        } catch {}
+      }
     },
   },
 });

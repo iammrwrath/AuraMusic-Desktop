@@ -35,6 +35,10 @@ export const SyncedLine = (props: SyncedLineProps) => {
   createEffect(() => {
     if (status() === 'current') {
       ref?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      window.ipcRenderer?.send('ytmd:current-lyric-changed', {
+        text: props.line.text,
+        translation: props.line.translation || '',
+      });
     }
   });
 

@@ -31,6 +31,9 @@ ytmusic-nav-bar {
   -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   border-bottom: 1px solid var(--aura-border) !important;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  contain: paint;
+  will-change: transform;
+  transform: translateZ(0);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -101,6 +104,9 @@ ytmusic-player-bar {
   border-top: 1px solid var(--aura-border) !important;
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45) !important;
   padding: 0 12px !important;
+  contain: paint;
+  will-change: transform;
+  transform: translateZ(0);
 }
 
 /* Player Bar Progress Slider - Neon Gradient */

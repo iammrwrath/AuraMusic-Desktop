@@ -75,8 +75,10 @@ export class Kugou implements LyricProvider {
       const dlData = (await dlRes.json()) as KugouDownloadResponse;
       if (!dlData.content) return null;
 
-      // Decode base64 to string
-      const decodedLrc = atob(dlData.content);
+      // Decode base64 to UTF-8 string properly to support Chinese, Japanese, and Korean
+      const binaryString = atob(dlData.content);
+      const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0));
+      const decodedLrc = new TextDecoder('utf-8').decode(bytes);
       const parsed = LRC.parse(decodedLrc);
 
       return {

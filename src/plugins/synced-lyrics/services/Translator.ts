@@ -51,11 +51,65 @@ export class LyricsTranslator {
     lines: { text: string; translation?: string }[],
     targetLang: string = this.targetLanguage,
   ): Promise<void> {
-    const promises = lines.map(async (line) => {
-      if (!line.text.trim()) return;
-      line.translation = await this.translateLine(line.text, targetLang);
-    });
+    if (!lines || lines.length === 0) return;
 
-    await Promise.allSettled(promises);
+    // Check cache first for all lines
+    const uncachedIndices: number[] = [];
+    for (let i = 0; i < lines.length; i++) {
+      const trimmed = lines[i].text.trim();
+      if (!trimmed || trimmed.length < 2) continue;
+      const cacheKey = `${targetLang}:${trimmed}`;
+      if (translationCache.has(cacheKey)) {
+        lines[i].translation = translationCache.get(cacheKey);
+      } else {
+        uncachedIndices.push(i);
+      }
+    }
+
+    if (uncachedIndices.length === 0) return;
+
+    // Process uncached lines in chunks of 20 to avoid firing 100+ concurrent requests and hitting HTTP 429
+    const CHUNK_SIZE = 20;
+    for (let i = 0; i < uncachedIndices.length; i += CHUNK_SIZE) {
+      const chunk = uncachedIndices.slice(i, i + CHUNK_SIZE);
+      const combinedText = chunk.map((idx) => lines[idx].text.trim()).join('\n');
+
+      try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${encodeURIComponent(
+          targetLang,
+        )}&dt=t&q=${encodeURIComponent(combinedText)}`;
+
+        const res = await fetch(url);
+        if (res.ok) {
+          const data = (await res.json()) as unknown[][][];
+          if (Array.isArray(data) && Array.isArray(data[0])) {
+            const translatedFull = data[0]
+              .map((c) => (Array.isArray(c) && typeof c[0] === 'string' ? c[0] : ''))
+              .join('');
+
+            const translatedLines = translatedFull.split('\n');
+            if (translatedLines.length === chunk.length) {
+              for (let j = 0; j < chunk.length; j++) {
+                const lineIdx = chunk[j];
+                const original = lines[lineIdx].text.trim();
+                const trans = translatedLines[j].trim();
+                if (trans && trans.toLowerCase() !== original.toLowerCase()) {
+                  lines[lineIdx].translation = trans;
+                  translationCache.set(`${targetLang}:${original}`, trans);
+                }
+              }
+              continue;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[AuraMusic Live Translator] Batch translation error, using fallback:', e);
+      }
+
+      // Fallback: translate line by line
+      for (const lineIdx of chunk) {
+        lines[lineIdx].translation = await this.translateLine(lines[lineIdx].text, targetLang);
+      }
+    }
   }
 }

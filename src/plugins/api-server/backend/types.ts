@@ -14,6 +14,7 @@ export type BackendType = {
   songInfo?: SongInfo;
   currentRepeatMode?: RepeatMode;
   volume?: number;
+  currentLyric?: { text: string; translation?: string };
 
   init: (ctx: BackendContext<APIServerConfig>) => Promise<void>;
   run: (hostname: string, port: number) => void;

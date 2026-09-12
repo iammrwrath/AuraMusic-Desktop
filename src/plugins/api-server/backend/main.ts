@@ -40,6 +40,13 @@ export const backend = createBackend<BackendType, APIServerConfig>({
       (newVolume: number) => (this.volume = newVolume),
     );
 
+    ctx.ipc.on(
+      'ytmd:current-lyric-changed',
+      (lyric: { text: string; translation?: string }) => {
+        this.currentLyric = lyric;
+      },
+    );
+
     this.run(config.hostname, config.port);
   },
   stop() {
@@ -104,7 +111,12 @@ export const backend = createBackend<BackendType, APIServerConfig>({
       () => this.volume,
     );
     registerAuth(this.app, ctx);
-    registerOverlay(this.app, ctx, () => this.songInfo);
+    registerOverlay(
+      this.app,
+      ctx,
+      () => this.songInfo,
+      () => this.currentLyric,
+    );
 
     // swagger
     this.app.openAPIRegistry.registerComponent(
