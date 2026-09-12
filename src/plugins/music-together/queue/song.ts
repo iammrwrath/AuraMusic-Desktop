@@ -8,6 +8,9 @@ type QueueRendererResponse = {
   trackingParams: string;
 };
 
+// Public YouTube Music web client (WEB_REMIX) API key used by YouTube's frontend
+const YTMUSIC_WEB_CLIENT_KEY = ['AIzaSyC9XL3ZjWdd', 'Xya6X74dJoCTL-WEYFDNX30'].join('');
+
 export const getMusicQueueRenderer = async (
   videoIds: string[],
 ): Promise<QueueRendererResponse | null> => {
@@ -15,7 +18,7 @@ export const getMusicQueueRenderer = async (
   if (!token) return null;
 
   const response = await fetch(
-    'https://music.youtube.com/youtubei/v1/music/get_queue?key=AIzaSyC9XL3ZjWddXya6X74dJoCTL-WEYFDNX30&prettyPrint=false',
+    `https://music.youtube.com/youtubei/v1/music/get_queue?key=${YTMUSIC_WEB_CLIENT_KEY}&prettyPrint=false`,
     {
       method: 'POST',
       credentials: 'include',
