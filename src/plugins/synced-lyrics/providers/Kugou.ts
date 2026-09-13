@@ -51,6 +51,7 @@ export class Kugou implements LyricProvider {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
+        signal: AbortSignal.timeout(6000),
       });
 
       if (!res.ok) return null;
@@ -68,6 +69,7 @@ export class Kugou implements LyricProvider {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         },
+        signal: AbortSignal.timeout(6000),
       });
 
       if (!dlRes.ok) return null;

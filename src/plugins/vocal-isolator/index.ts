@@ -14,6 +14,7 @@ let destinationNode: AudioDestinationNode | null = null;
 let splitter: ChannelSplitterNode | null = null;
 let merger: ChannelMergerNode | null = null;
 let centerSum: GainNode | null = null;
+let bassShieldHighpass: BiquadFilterNode | null = null;
 let bandpassFilter: BiquadFilterNode | null = null;
 let karaokeInverter: GainNode | null = null;
 let bypassGain: GainNode | null = null;
@@ -24,27 +25,35 @@ let rawAudioSource: AudioNode | null = null;
 let currentMode: VocalMode = 'off';
 let buttonEl: HTMLButtonElement | null = null;
 
+function setGainSmooth(gainNode: GainNode | null, target: number) {
+  if (!gainNode) return;
+  const now = gainNode.context.currentTime;
+  gainNode.gain.cancelScheduledValues(now);
+  gainNode.gain.setValueAtTime(gainNode.gain.value, now);
+  gainNode.gain.setTargetAtTime(target, now, 0.025); // 25ms click-free crossfade
+}
+
 function applyMode(mode: VocalMode) {
   currentMode = mode;
   if (!bypassGain || !processedGain || !centerSum || !karaokeInverter) return;
 
   if (mode === 'off') {
-    bypassGain.gain.value = 1.0;
-    processedGain.gain.value = 0.0;
+    setGainSmooth(bypassGain, 1.0);
+    setGainSmooth(processedGain, 0.0);
   } else if (mode === 'karaoke') {
     // Vocal cut: bypass off, inverted center vocal subtracted from original stereo
-    bypassGain.gain.value = 0.0;
-    processedGain.gain.value = 1.0;
-    if (stereoPassGain) stereoPassGain.gain.value = 1.0;
-    karaokeInverter.gain.value = -1.0;
-    centerSum.gain.value = 0.5;
+    setGainSmooth(bypassGain, 0.0);
+    setGainSmooth(processedGain, 1.0);
+    if (stereoPassGain) setGainSmooth(stereoPassGain, 1.0);
+    setGainSmooth(karaokeInverter, -1.0);
+    setGainSmooth(centerSum, 0.5);
   } else if (mode === 'acapella') {
     // Vocal solo: isolate centered vocal formant band, mute original stereo pass
-    bypassGain.gain.value = 0.0;
-    processedGain.gain.value = 1.0;
-    if (stereoPassGain) stereoPassGain.gain.value = 0.0;
-    karaokeInverter.gain.value = 1.0;
-    centerSum.gain.value = 1.0;
+    setGainSmooth(bypassGain, 0.0);
+    setGainSmooth(processedGain, 1.0);
+    if (stereoPassGain) setGainSmooth(stereoPassGain, 0.0);
+    setGainSmooth(karaokeInverter, 1.0);
+    setGainSmooth(centerSum, 1.0);
   }
 
   updateButtonUI();
@@ -103,11 +112,17 @@ function setupAudioDSP(audioSource: AudioNode, audioContext: AudioContext) {
   centerSum = audioContext.createGain();
   centerSum.gain.value = 0.5;
 
+  // Bass Shield: 130Hz high-pass filter so sub-bass (<130Hz), 808s, and kick drums remain 100% untouched
+  bassShieldHighpass = audioContext.createBiquadFilter();
+  bassShieldHighpass.type = 'highpass';
+  bassShieldHighpass.frequency.value = 130;
+  bassShieldHighpass.Q.value = 0.7;
+
   // Vocal formant bandpass: human vocal core range ~300Hz - 3400Hz
   bandpassFilter = audioContext.createBiquadFilter();
   bandpassFilter.type = 'bandpass';
-  bandpassFilter.frequency.value = 1200;
-  bandpassFilter.Q.value = 0.8;
+  bandpassFilter.frequency.value = 1250;
+  bandpassFilter.Q.value = 0.85;
 
   karaokeInverter = audioContext.createGain();
   karaokeInverter.gain.value = -1.0;
@@ -122,8 +137,9 @@ function setupAudioDSP(audioSource: AudioNode, audioContext: AudioContext) {
   splitter.connect(centerSum, 0);
   splitter.connect(centerSum, 1);
 
-  // Filter vocal band
-  centerSum.connect(bandpassFilter);
+  // Route centerSum -> bassShieldHighpass -> bandpassFilter -> karaokeInverter
+  centerSum.connect(bassShieldHighpass);
+  bassShieldHighpass.connect(bandpassFilter);
   bandpassFilter.connect(karaokeInverter);
 
   // Route inverted center vocal into L and R channels

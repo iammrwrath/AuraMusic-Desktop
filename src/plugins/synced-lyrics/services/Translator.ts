@@ -25,7 +25,7 @@ export class LyricsTranslator {
         targetLang,
       )}&dt=t&q=${encodeURIComponent(trimmed)}`;
 
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
       if (!res.ok) return '';
 
       const data = (await res.json()) as unknown[][][];
@@ -79,7 +79,7 @@ export class LyricsTranslator {
           targetLang,
         )}&dt=t&q=${encodeURIComponent(combinedText)}`;
 
-        const res = await fetch(url);
+        const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
         if (res.ok) {
           const data = (await res.json()) as unknown[][][];
           if (Array.isArray(data) && Array.isArray(data[0])) {

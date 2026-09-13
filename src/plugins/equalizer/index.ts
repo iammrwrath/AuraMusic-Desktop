@@ -10,9 +10,69 @@ export type EqualizerPluginConfig = {
   presets: { [preset in Preset]: boolean };
 };
 
-let appliedFilters: BiquadFilterNode[] = [];
+let appliedNodes: AudioNode[] = [];
+let cachedAudioSource: AudioNode | null = null;
+let cachedAudioContext: AudioContext | null = null;
+let currentConfig: EqualizerPluginConfig | null = null;
 
-export default createPlugin({
+function applyEqualizerChain(config: EqualizerPluginConfig) {
+  currentConfig = config;
+
+  // Disconnect existing filter nodes
+  appliedNodes.forEach((node) => {
+    try {
+      node.disconnect();
+    } catch {}
+  });
+  appliedNodes = [];
+
+  if (!cachedAudioSource || !cachedAudioContext) return;
+
+  const filtersToApply = config.filters.concat(
+    defaultPresets
+      .filter((preset) => config.presets[preset])
+      .map((preset) => presetConfigs[preset]),
+  );
+
+  if (filtersToApply.length === 0) return;
+
+  // Studio-grade anti-clipping pre-amp attenuation to preserve headroom when boosting high gains
+  const maxGain = Math.max(0, ...filtersToApply.map((f) => f.gain));
+  const preampGainDb = maxGain > 0 ? -Math.min(maxGain * 0.35, 3.5) : 0;
+
+  const preampNode = cachedAudioContext.createGain();
+  preampNode.gain.value = Math.pow(10, preampGainDb / 20);
+  appliedNodes.push(preampNode);
+
+  cachedAudioSource.connect(preampNode);
+  let previousNode: AudioNode = preampNode;
+
+  // Cascade filters in series
+  for (const filter of filtersToApply) {
+    const biquad = cachedAudioContext.createBiquadFilter();
+    biquad.type = filter.type;
+    biquad.frequency.value = filter.frequency;
+    biquad.Q.value = filter.Q;
+    biquad.gain.value = filter.gain;
+
+    previousNode.connect(biquad);
+    previousNode = biquad;
+    appliedNodes.push(biquad);
+  }
+
+  previousNode.connect(cachedAudioContext.destination);
+}
+
+export default createPlugin<
+  unknown,
+  unknown,
+  {
+    start: ({ getConfig }: { getConfig: () => Promise<EqualizerPluginConfig> }) => Promise<void>;
+    onConfigChange: (newConfig: EqualizerPluginConfig) => void;
+    stop: () => void;
+  },
+  EqualizerPluginConfig
+>({
   name: () => t('plugins.equalizer.name'),
   description: () => t('plugins.equalizer.description'),
   restartNeeded: false,
@@ -66,34 +126,30 @@ export default createPlugin({
   renderer: {
     async start({ getConfig }) {
       const config = await getConfig();
+      currentConfig = config;
 
       document.addEventListener(
         'ytmd:audio-can-play',
         ({ detail: { audioSource, audioContext } }) => {
-          const filtersToApply = config.filters.concat(
-            defaultPresets
-              .filter((preset) => config.presets[preset])
-              .map((preset) => presetConfigs[preset]),
-          );
-          filtersToApply.forEach((filter) => {
-            const biquadFilter = audioContext.createBiquadFilter();
-            biquadFilter.type = filter.type;
-            biquadFilter.frequency.value = filter.frequency; // filter frequency in Hz
-            biquadFilter.Q.value = filter.Q;
-            biquadFilter.gain.value = filter.gain; // filter gain in dB
-
-            audioSource.connect(biquadFilter);
-            biquadFilter.connect(audioContext.destination);
-
-            appliedFilters.push(biquadFilter);
-          });
+          cachedAudioSource = audioSource;
+          cachedAudioContext = audioContext;
+          if (currentConfig) {
+            applyEqualizerChain(currentConfig);
+          }
         },
         { once: true, passive: true },
       );
     },
+    onConfigChange(newConfig) {
+      applyEqualizerChain(newConfig);
+    },
     stop() {
-      appliedFilters.forEach((filter) => filter.disconnect());
-      appliedFilters = [];
+      appliedNodes.forEach((node) => {
+        try {
+          node.disconnect();
+        } catch {}
+      });
+      appliedNodes = [];
     },
   },
 });

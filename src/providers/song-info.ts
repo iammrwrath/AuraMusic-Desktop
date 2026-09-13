@@ -198,7 +198,11 @@ const registerProvider = (win: BrowserWindow) => {
 
     if (tempSongInfo) {
       for (const c of callbacks) {
-        c(tempSongInfo, SongInfoEvent.VideoSrcChanged);
+        try {
+          c(tempSongInfo, SongInfoEvent.VideoSrcChanged);
+        } catch (e) {
+          console.error('[AuraMusic SongInfo] Callback failed for VideoSrcChanged:', e);
+        }
       }
     }
   });
@@ -224,7 +228,11 @@ const registerProvider = (win: BrowserWindow) => {
 
       if (tempSongInfo) {
         for (const c of callbacks) {
-          c(tempSongInfo, SongInfoEvent.PlayOrPaused);
+          try {
+            c(tempSongInfo, SongInfoEvent.PlayOrPaused);
+          } catch (e) {
+            console.error('[AuraMusic SongInfo] Callback failed for PlayOrPaused:', e);
+          }
         }
       }
     },
@@ -243,7 +251,11 @@ const registerProvider = (win: BrowserWindow) => {
 
     if (tempSongInfo) {
       for (const c of callbacks) {
-        c(tempSongInfo, SongInfoEvent.TimeChanged);
+        try {
+          c(tempSongInfo, SongInfoEvent.TimeChanged);
+        } catch (e) {
+          console.error('[AuraMusic SongInfo] Callback failed for TimeChanged:', e);
+        }
       }
     }
   });
