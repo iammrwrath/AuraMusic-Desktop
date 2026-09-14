@@ -126,6 +126,11 @@ app.commandLine.appendSwitch(
   'enable-features',
   'OverlayScrollbar,SharedArrayBuffer,UseOzonePlatform,WaylandWindowDecorations,CanvasOopRasterization,SmoothScrolling',
 );
+// Background audio and timer resilience (zero stutter when minimized or occluded)
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
+
 if (config.get('options.disableHardwareAcceleration')) {
   if (is.dev()) {
     console.log('Disabling hardware acceleration');
@@ -136,7 +141,7 @@ if (config.get('options.disableHardwareAcceleration')) {
 
 if (is.linux()) {
   // Overrides WM_CLASS for X11 to correspond to icon filename
-  app.setName('com.github.th_ch.youtube_music');
+  app.setName('com.auramusic.desktop');
 
   // Stops chromium from launching its own MPRIS service
   if (config.plugins.isEnabled('shortcuts')) {
@@ -342,6 +347,7 @@ async function createMainWindow() {
     show: false,
     webPreferences: {
       contextIsolation: true,
+      backgroundThrottling: false,
       preload: path.join(__dirname, '..', 'preload', 'preload.js'),
       ...(isTesting()
         ? undefined
@@ -636,7 +642,7 @@ app.whenReady().then(async () => {
 
   // Register appID on windows
   if (is.windows()) {
-    const appID = 'com.github.th-ch.youtube-music';
+    const appID = 'com.auramusic.desktop';
     app.setAppUserModelId(appID);
     const appLocation = process.execPath;
     const appData = app.getPath('appData');
@@ -651,7 +657,7 @@ app.whenReady().then(async () => {
         'Windows',
         'Start Menu',
         'Programs',
-        'YouTube Music.lnk',
+        'AuraMusic.lnk',
       );
       try {
         // Check if shortcut is registered and valid
@@ -671,7 +677,7 @@ app.whenReady().then(async () => {
           {
             target: appLocation,
             cwd: path.dirname(appLocation),
-            description: 'YouTube Music Desktop App - including custom plugins',
+            description: 'AuraMusic Desktop - High Performance Music Player',
             appUserModelId: appID,
           },
         );
@@ -780,7 +786,7 @@ app.whenReady().then(async () => {
     }, 2000);
     autoUpdater.on('update-available', () => {
       const downloadLink =
-        'https://github.com/th-ch/youtube-music/releases/latest';
+        'https://github.com/iammrwrath/AuraMusic-Desktop/releases/latest';
       const dialogOptions: Electron.MessageBoxOptions = {
         type: 'info',
         buttons: [

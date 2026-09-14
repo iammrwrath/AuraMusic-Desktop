@@ -1,6 +1,6 @@
 import { createEffect, createMemo, For, Show, createSignal } from 'solid-js';
 
-import { currentTime } from './LyricsContainer';
+import { currentTime, isUserScrolling, setIsUserScrolling } from './LyricsContainer';
 
 import { config } from '../renderer';
 import { _ytAPI } from '..';
@@ -34,7 +34,9 @@ export const SyncedLine = (props: SyncedLineProps) => {
   let ref: HTMLDivElement | undefined;
   createEffect(() => {
     if (status() === 'current') {
-      ref?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (!isUserScrolling()) {
+        ref?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
       window.ipcRenderer?.send('ytmd:current-lyric-changed', {
         text: props.line.text,
         translation: props.line.translation || '',
@@ -82,6 +84,8 @@ export const SyncedLine = (props: SyncedLineProps) => {
       ref={ref}
       class={`synced-line ${status()}`}
       onClick={() => {
+        setIsUserScrolling(false);
+        ref?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         _ytAPI?.seekTo(props.line.timeInMs / 1000);
       }}
     >

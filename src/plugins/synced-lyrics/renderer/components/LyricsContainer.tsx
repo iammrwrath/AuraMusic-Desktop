@@ -11,6 +11,17 @@ import { currentLyrics, lyricsStore } from '../../providers';
 
 export const [debugInfo, setDebugInfo] = createSignal<string>();
 export const [currentTime, setCurrentTime] = createSignal<number>(-1);
+export const [isUserScrolling, setIsUserScrolling] = createSignal<boolean>(false);
+
+let userScrollTimeout: NodeJS.Timeout | undefined;
+
+export const notifyUserScroll = () => {
+  setIsUserScrolling(true);
+  if (userScrollTimeout) clearTimeout(userScrollTimeout);
+  userScrollTimeout = setTimeout(() => {
+    setIsUserScrolling(false);
+  }, 3500);
+};
 
 // prettier-ignore
 export const LyricsContainer = () => {
@@ -29,7 +40,12 @@ export const LyricsContainer = () => {
   });
 
   return (
-    <div class="lyric-container">
+    <div
+      class="lyric-container"
+      onWheel={notifyUserScroll}
+      onTouchMove={notifyUserScroll}
+      onScroll={notifyUserScroll}
+    >
       <Switch>
         <Match when={currentLyrics()?.state === 'fetching'}>
           <LoadingKaomoji />

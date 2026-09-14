@@ -1,10 +1,31 @@
-import { BrowserWindow, ipcMain, nativeImage, net } from 'electron';
+import { BrowserWindow, ipcMain, nativeImage, net, powerSaveBlocker } from 'electron';
 
 import { Mutex } from 'async-mutex';
 
 import config from '@/config';
 
 import type { GetPlayerResponse } from '@/types/get-player-response';
+
+let powerSaveBlockerId: number | null = null;
+const updatePowerSaveState = (isPaused?: boolean) => {
+  try {
+    if (isPaused === false) {
+      if (powerSaveBlockerId === null || !powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+        powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+      }
+    } else if (isPaused === true && powerSaveBlockerId !== null) {
+      if (powerSaveBlocker.isStarted(powerSaveBlockerId)) {
+        powerSaveBlocker.stop(powerSaveBlockerId);
+      }
+      powerSaveBlockerId = null;
+    }
+  } catch (e) {
+    console.error('[AuraMusic SongInfo] powerSaveBlocker error:', e);
+  }
+};
+
+const imageCache = new Map<string, Electron.NativeImage>();
+const MAX_IMAGE_CACHE_SIZE = 50;
 
 export enum MediaType {
   /**
@@ -45,18 +66,38 @@ export interface SongInfo {
   tags?: string[];
 }
 
-// Grab the native image using the src
+// Grab the native image using the src with LRU in-memory caching
 export const getImage = async (src: string): Promise<Electron.NativeImage> => {
-  const result = await net.fetch(src);
-  const output = nativeImage.createFromBuffer(
-    Buffer.from(await result.arrayBuffer()),
-  );
-  if (output.isEmpty() && !src.endsWith('.jpg') && src.includes('.jpg')) {
-    // Fix hidden webp files (https://github.com/th-ch/youtube-music/issues/315)
-    return getImage(src.slice(0, src.lastIndexOf('.jpg') + 4));
+  if (imageCache.has(src)) {
+    const cached = imageCache.get(src)!;
+    // Refresh LRU order
+    imageCache.delete(src);
+    imageCache.set(src, cached);
+    return cached;
   }
 
-  return output;
+  try {
+    const result = await net.fetch(src, { signal: AbortSignal.timeout(5000) });
+    let output = nativeImage.createFromBuffer(
+      Buffer.from(await result.arrayBuffer()),
+    );
+    if (output.isEmpty() && !src.endsWith('.jpg') && src.includes('.jpg')) {
+      // Fix hidden webp files (https://github.com/th-ch/youtube-music/issues/315)
+      output = await getImage(src.slice(0, src.lastIndexOf('.jpg') + 4));
+    }
+
+    if (!output.isEmpty()) {
+      if (imageCache.size >= MAX_IMAGE_CACHE_SIZE) {
+        const oldestKey = imageCache.keys().next().value;
+        if (oldestKey) imageCache.delete(oldestKey);
+      }
+      imageCache.set(src, output);
+    }
+
+    return output;
+  } catch {
+    return nativeImage.createEmpty();
+  }
 };
 
 const handleData = async (
@@ -150,11 +191,18 @@ const handleData = async (
     const thumbnails = videoDetails.thumbnail?.thumbnails;
     songInfo.imageSrc = thumbnails?.at(-1)?.url?.split('?')?.at(0);
 
-    if (
-      songInfo.imageSrc &&
-      !(await net.fetch(songInfo.imageSrc, { method: 'HEAD' })).ok
-    ) {
-      songInfo.imageSrc = thumbnails.at(-1)?.url;
+    if (songInfo.imageSrc) {
+      try {
+        const headRes = await net.fetch(songInfo.imageSrc, {
+          method: 'HEAD',
+          signal: AbortSignal.timeout(3000),
+        });
+        if (!headRes.ok) {
+          songInfo.imageSrc = thumbnails?.at(-1)?.url;
+        }
+      } catch {
+        // Keep current imageSrc if HEAD request times out
+      }
     }
 
     if (songInfo.imageSrc) songInfo.image = await getImage(songInfo.imageSrc);
@@ -197,6 +245,7 @@ const registerProvider = (win: BrowserWindow) => {
     );
 
     if (tempSongInfo) {
+      updatePowerSaveState(tempSongInfo.isPaused);
       for (const c of callbacks) {
         try {
           c(tempSongInfo, SongInfoEvent.VideoSrcChanged);
@@ -227,6 +276,7 @@ const registerProvider = (win: BrowserWindow) => {
       });
 
       if (tempSongInfo) {
+        updatePowerSaveState(tempSongInfo.isPaused);
         for (const c of callbacks) {
           try {
             c(tempSongInfo, SongInfoEvent.PlayOrPaused);

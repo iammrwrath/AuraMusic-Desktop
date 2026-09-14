@@ -33,12 +33,16 @@ export const setupSeekedListener = singleton(() => {
 });
 
 export const setupTimeChangedListener = singleton(() => {
+  let lastSecond = -1;
   const progressObserver = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
       const target = mutation.target as Node & { value: string };
-      const numberValue = Number(target.value);
-      window.ipcRenderer.send('ytmd:time-changed', numberValue);
-      songInfo.elapsedSeconds = numberValue;
+      const numberValue = Math.floor(Number(target.value));
+      if (numberValue !== lastSecond && !Number.isNaN(numberValue)) {
+        lastSecond = numberValue;
+        window.ipcRenderer.send('ytmd:time-changed', numberValue);
+        songInfo.elapsedSeconds = numberValue;
+      }
     }
   });
   const progressBar = document.querySelector('#progress-bar');

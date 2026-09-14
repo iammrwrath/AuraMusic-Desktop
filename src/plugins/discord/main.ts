@@ -180,8 +180,8 @@ export const backend = createBackend<
     }
     if (!config.hideGitHubButton) {
       buttons.push({
-        label: 'View App On GitHub',
-        url: 'https://github.com/th-ch/youtube-music',
+        label: 'View AuraMusic on GitHub',
+        url: 'https://github.com/iammrwrath/AuraMusic-Desktop',
       });
     }
     if (buttons.length === 0) {

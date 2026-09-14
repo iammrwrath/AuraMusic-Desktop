@@ -181,8 +181,8 @@ export default createPlugin({
             Math.max(1, Math.ceil(1000 / this.buffer)),
           );
         };
-        songVideo.addEventListener('pause', onPause);
-        songVideo.addEventListener('play', onPlay);
+        video.addEventListener('pause', onPause);
+        video.addEventListener('play', onPlay);
 
         /* injecting */
         videoWrapper.prepend(blurCanvas);
@@ -191,8 +191,8 @@ export default createPlugin({
         return () => {
           if (canvasInterval) clearInterval(canvasInterval);
 
-          songVideo.removeEventListener('pause', onPause);
-          songVideo.removeEventListener('play', onPlay);
+          video.removeEventListener('pause', onPause);
+          video.removeEventListener('play', onPlay);
 
           if (blurCanvas.isConnected) blurCanvas.remove();
         };
