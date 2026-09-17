@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./assets/auramusic-logo.png" alt="AuraMusic Desktop Logo" width="160" />
+
 # 🎵 AuraMusic Desktop
 
 ### The ultimate YouTube Music desktop client for Windows, macOS, and Linux — featuring native Windows 11 Fluent Acrylic/Mica aesthetics, real-time karaoke vocal isolation, live lyrics translation, OBS Studio streaming broadcast suite, and audiophile DSP.

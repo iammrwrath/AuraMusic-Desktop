@@ -158,11 +158,11 @@ electronDebug({
   showDevTools: false, // Disable automatic devTools on new window
 });
 
-let icon = 'assets/youtube-music.png';
+let icon = 'assets/auramusic-logo.png';
 if (process.platform === 'win32') {
-  icon = 'assets/generated/icon.ico';
+  icon = 'assets/generated/icons/win/icon.ico';
 } else if (process.platform === 'darwin') {
-  icon = 'assets/generated/icon.icns';
+  icon = 'assets/generated/icons/mac/icon.icns';
 }
 
 function onClosed() {
