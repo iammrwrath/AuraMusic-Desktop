@@ -28,6 +28,11 @@
 
 ---
 
+## ⚠️ Project Status & Known Issues
+
+> [!NOTE]
+> **Active Development / Alpha Notice**: AuraMusic-Desktop is in active, early development. You may encounter bugs, quirks, or unexpected edge cases as features evolve. If you run into issues or have feedback, please feel free to open an issue on the [GitHub Issues](https://github.com/iammrwrath/AuraMusic-Desktop/issues) page to help improve the project!
+
 ## 🎧 Key Features
 
 ### 🪟 Windows 11 Fluent Acrylic & Cosmic Glass Mode
